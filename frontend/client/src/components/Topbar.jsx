@@ -1,26 +1,29 @@
-import { useEffect, useState } from "react";
-import API from "../api/axios";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 export default function Topbar() {
-  const [user, setUser] = useState("User");
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const { data } = await API.get("/users/me");
-        setUser(data.name);
-      } catch (err) {
-        console.log(err);
-      }
-    };
-
-    fetchUser();
-  }, []);
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
     <div className="topbar">
       <h3>Dashboard Overview</h3>
-      <span>Welcome, {user}</span>
+      <div className="topbar-right">
+        <span className="topbar-user">
+          {user?.role === "official" ? "🏛️" : "👤"} {user?.fullName || "User"}
+          {user?.role === "official" && (
+            <span className="topbar-badge">Official</span>
+          )}
+        </span>
+        <button className="logout-btn" onClick={handleLogout}>
+          Logout
+        </button>
+      </div>
     </div>
   );
 }
