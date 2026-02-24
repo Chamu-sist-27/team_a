@@ -133,3 +133,32 @@ exports.getPetitions = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// UPDATE PETITION STATUS (Officials only)
+exports.updatePetitionStatus = async (req, res) => {
+  try {
+    if (req.user.role !== "official") {
+      return res.status(403).json({ message: "Access denied. Officials only." });
+    }
+
+    const { status } = req.body;
+    const validStatuses = ["Active", "Under Review", "Closed"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: "Invalid status value." });
+    }
+
+    const petition = await Petition.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    );
+
+    if (!petition) {
+      return res.status(404).json({ message: "Petition not found." });
+    }
+
+    res.json({ message: "Status updated successfully", petition });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

@@ -21,7 +21,11 @@ export default function Login() {
         try {
             const res = await API.post("/auth/login", { ...form, role });
             login(res.data.user, res.data.token);
-            navigate("/dashboard");
+            if (res.data.user.role === "official") {
+                navigate("/official/dashboard");
+            } else {
+                navigate("/dashboard");
+            }
         } catch (err) {
             setError(err.response?.data?.message || "Login failed. Please try again.");
         } finally {
