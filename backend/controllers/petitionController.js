@@ -2,6 +2,10 @@ const mongoose = require("mongoose");
 const Petition = require("../models/Petition");
 const Signature = require("../models/Signature");
 
+
+/* ===================================================
+   CREATE PETITION
+=================================================== */
 exports.createPetition = async (req, res) => {
   try {
     const { title, description, category, location } = req.body;
@@ -24,16 +28,16 @@ exports.createPetition = async (req, res) => {
       message: "Petition created successfully",
       petition
     });
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
 
-
-//SIGN PETITION
-
-
+/* ===================================================
+   SIGN PETITION
+=================================================== */
 exports.signPetition = async (req, res) => {
   try {
     const petitionId = req.params.id;
@@ -79,8 +83,9 @@ exports.signPetition = async (req, res) => {
 };
 
 
-
-
+/* ===================================================
+   GET PETITIONS (FILTER + PAGINATION)
+=================================================== */
 exports.getPetitions = async (req, res) => {
   try {
     const {
@@ -97,9 +102,14 @@ exports.getPetitions = async (req, res) => {
 
     const filter = {};
 
-    if (location) filter.location = location;
-    if (category) filter.category = category;
-    if (status) filter.status = status;
+    if (location)
+      filter.location = { $regex: location, $options: "i" };
+
+    if (category)
+      filter.category = { $regex: category, $options: "i" };
+
+    if (status)
+      filter.status = status;
 
     const petitions = await Petition.find(filter)
       .populate("creator", "fullName email")
@@ -134,30 +144,90 @@ exports.getPetitions = async (req, res) => {
   }
 };
 
-// UPDATE PETITION STATUS (Officials only)
-exports.updatePetitionStatus = async (req, res) => {
+
+/* ===================================================
+   UPDATE PETITION (Creator Only)
+=================================================== */
+exports.updatePetition = async (req, res) => {
   try {
-    if (req.user.role !== "official") {
-      return res.status(403).json({ message: "Access denied. Officials only." });
+    const petitionId = req.params.id;
+    const userId = req.user.id;
+
+    if (!mongoose.Types.ObjectId.isValid(petitionId)) {
+      return res.status(400).json({ message: "Invalid Petition ID" });
     }
 
-    const { status } = req.body;
-    const validStatuses = ["Active", "Under Review", "Closed"];
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ message: "Invalid status value." });
-    }
-
-    const petition = await Petition.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true }
-    );
+    const petition = await Petition.findById(petitionId);
 
     if (!petition) {
-      return res.status(404).json({ message: "Petition not found." });
+      return res.status(404).json({ message: "Petition not found" });
     }
 
-    res.json({ message: "Status updated successfully", petition });
+    if (petition.creator.toString() !== userId) {
+      return res.status(403).json({ message: "Not authorized to edit" });
+    }
+
+    if (petition.status === "closed") {
+      return res.status(400).json({ message: "Cannot edit closed petition" });
+    }
+
+    const { title, description, category, location } = req.body;
+
+    petition.title = title || petition.title;
+    petition.description = description || petition.description;
+    petition.category = category || petition.category;
+    petition.location = location || petition.location;
+
+    await petition.save();
+
+    res.status(200).json({
+      message: "Petition updated successfully",
+      petition
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+/* ===================================================
+   UPDATE STATUS (Official Only)
+=================================================== */
+exports.updateStatus = async (req, res) => {
+  try {
+    const petitionId = req.params.id;
+    const { status } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(petitionId)) {
+      return res.status(400).json({ message: "Invalid Petition ID" });
+    }
+
+    const petition = await Petition.findById(petitionId);
+
+    if (!petition) {
+      return res.status(404).json({ message: "Petition not found" });
+    }
+
+    if (req.user.role !== "official") {
+      return res.status(403).json({
+        message: "Only officials can update petition status"
+      });
+    }
+
+    const validStatuses = ["active", "under_review", "closed"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: "Invalid status value" });
+    }
+
+    petition.status = status;
+    await petition.save();
+
+    res.status(200).json({
+      message: "Status updated successfully",
+      petition
+    });
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
