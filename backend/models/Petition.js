@@ -5,35 +5,35 @@ const petitionSchema = new mongoose.Schema(
     title: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
     description: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
     category: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
     location: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
     status: {
       type: String,
-      enum: ["Active", "Under Review", "Closed"],
-      default: "Active"
+      enum: ["active", "under_review", "closed"],
+      default: "active",
     },
     creator: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true
-    }
+      required: true,
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Petition", petitionSchema);
