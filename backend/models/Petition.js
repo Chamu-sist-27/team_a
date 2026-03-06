@@ -10,31 +10,29 @@ const petitionSchema = new mongoose.Schema(
     description: {
       type: String,
       required: true,
+      trim: true,
     },
     category: {
       type: String,
       required: true,
+      trim: true,
     },
     location: {
       type: String,
       required: true,
+      trim: true,
     },
     status: {
       type: String,
       enum: ["active", "under_review", "closed"],
+      lowercase: true,
       default: "active",
     },
-    createdBy: {
+    creator: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
-    signatures: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
   },
   { timestamps: true },
 );

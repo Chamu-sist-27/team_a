@@ -1,7 +1,16 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:5000/api", // Change when backend ready
+  baseURL: "http://localhost:8000/api",
+});
+
+// Attach JWT token to every request automatically
+API.interceptors.request.use((config) => {
+  const token = localStorage.getItem("civix_token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 export default API;
